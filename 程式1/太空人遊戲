@@ -1,0 +1,128 @@
+import pygame
+import random
+import os
+W=500
+H=600
+#遊戲初始化及創建視窗
+pygame.init()#初始化
+screen=pygame.display.set_mode((W,H))#畫面寬高
+clock=pygame.time.Clock()#創造時間物件
+pygame.display.set_caption('第一個遊戲')#遊戲名稱
+running=True
+WHITE=(255,255,255)
+RED=(255,0,0)
+GREEN=(0,255,0)
+YELLOW=(255,255,0)
+BLACK=(0,0,0)
+x1=0
+
+background_img=pygame.image.load(os.path.join('background.png')).convert()
+player_img=pygame.image.load(os.path.join('a2.png')).convert()
+rock_img=pygame.image.load(os.path.join('a3.png')).convert()
+bullet_img=pygame.image.load(os.path.join('a4.png')).convert()
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image=pygame.transform.scale(player_img,(75,75))
+        self.image.set_colorkey(BLACK)
+        self.rect=self.image.get_rect()
+        self.radius=35
+        self.rect.centerx=W/2
+        self.rect.bottom=H-10
+        self.speedx=10#太空船速度
+    def update(self):
+        Key_pressed=pygame.key.get_pressed()#有沒有被按下去
+        if Key_pressed[pygame.K_d]:
+            self.rect.x+=self.speedx
+        if Key_pressed[pygame.K_a]:
+            self.rect.x-= self.speedx
+        if self.rect.right>W:
+            self.rect.right=W
+        if self.rect.left<0:
+            self.rect.left=0  
+    def shoot(self):
+        bullet=Bullet(self.rect.centerx,self.rect.top)
+        all_sprites.add(bullet)
+        bullets.add(bullet)
+
+class Rock(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image=pygame.transform.scale(rock_img,(75,75))
+        self.image.set_colorkey(BLACK)
+        self.rect=self.image.get_rect()
+        self.radius=self.rect.width*0.9 / 2
+        self.rect.centerx=random.randrange(0,W-self.rect.width)
+        self.rect.bottom=random.randrange(-100,-40)
+        self.speedy=random.randrange(2,4)#石頭速度
+        self.speedx=random.randrange(-2,2)
+    def update(self):
+        self.rect.x+=self.speedx
+        self.rect.y+=self.speedy
+        if self.rect.top>H or self.rect.left>W or self.rect.right<0:
+            self.rect.centerx=random.randrange(0,W-self.rect.width)
+            self.rect.bottom=random.randrange(-100,-40)
+            self.speedy=random.randrange(2,4)#石頭速度
+            self.speedx=random.randrange(-2,2)
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image=bullet_img
+        self.image.set_colorkey(BLACK)
+        self.rect=self.image.get_rect()
+        self.rect.centerx=x
+        self.rect.bottom=y
+        self.speedy=-10#石頭速度
+       
+    def update(self):
+        self.rect.y+=self.speedy
+        if self.rect.bottom<0: 
+            self.kill()
+
+    
+
+all_sprites=pygame.sprite.Group()
+rocks=pygame.sprite.Group()
+bullets=pygame.sprite.Group()
+player = Player()
+all_sprites.add(player)
+
+for i in range(x1+8):
+    rock=Rock()
+    all_sprites.add(rock)
+    rocks.add(rock)
+
+
+#遊戲迴圈
+while running:
+    
+    clock.tick(60)#一秒鐘更新畫面次數
+    for event in pygame.event.get():#取得現在發生的所有事件
+        if event.type==pygame.QUIT:#type類型，pygame.QUIT遊戲關閉
+            running=False#跳出迴圈
+        elif event.type==pygame.KEYDOWN:
+            if event.key==pygame.K_SPACE:
+                player.shoot() 
+    all_sprites.update()
+    hits=pygame.sprite.groupcollide(rocks,bullets,True,True)
+    if hits:
+        x1+=1
+    for hit in hits:
+        rock=Rock() 
+        all_sprites.add(rock)
+        rocks.add(rock)
+    hits=pygame.sprite.spritecollide(player,rocks,False,pygame.sprite.collide_circle)
+    if hits: 
+        running=False
+    b=pygame.font.Font('SourceHanSerifTC-Bold.otf',20)#自訂文件，(字體文件，字大小)
+    screen.fill(BLACK)
+    screen.blit(background_img,(0,0))
+    all_sprites.draw(screen)
+    txt1=b.render(f'分數:{x1}',True,(255,255,255))#書寫文字
+    #(文字內容,True,文字顏色,背景顏色)
+
+    screen.blit(txt1,(20,20))
+    pygame.display.update()
+
+pygame.quit()#關閉視窗
